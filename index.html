@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50 antialiased" x-data="{
+    darkMode: localStorage.getItem('darkMode') === 'true',
+    eInvoiceMode: 'off',
+    activeTab: 'generator',
+    
+    // Live Invoice Builder State (Clean start with interactive preview)
+    customerType: 'b2b',
+    customerName: 'Bintang Global Logistics Sdn. Bhd.',
+    customerTin: 'C25890123000',
+    customerSst: 'W10-1808-32000045',
+    invoiceNo: 'INV-2026-0892',
+    issueDate: '2026-09-01',
+    dueDate: '2026-10-01',
+    showPdfModal: false,
+    
+    items: [
+        { description: 'Cloud Infrastructure & Enterprise ERP Server Hosting', qty: 1, price: 4200.00, sst: 8 },
+        { description: 'Monthly System Maintenance & Technical Support', qty: 1, price: 1500.00, sst: 8 }
+    ],
+
+    addItem() {
+        this.items.push({ description: '', qty: 1, price: 0.00, sst: 8 });
+    },
+
+    removeItem(index) {
+        if (this.items.length > 1) {
+            this.items.splice(index, 1);
+        }
+    },
+
+    get subtotal() {
+        return this.items.reduce((sum, i) => sum + ((parseFloat(i.qty) || 0) * (parseFloat(i.price) || 0)), 0);
+    },
+
+    get sstTotal() {
+        return this.items.reduce((sum, i) => sum + (((parseFloat(i.qty) || 0) * (parseFloat(i.price) || 0)) * ((parseFloat(i.sst) || 0) / 100)), 0);
+    },
+
+    get grandTotal() {
+        return this.subtotal + this.sstTotal;
+    },
+
+    formatMoney(val) {
+        return (val || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+
+    toggleDarkMode() {
+        this.darkMode = !this.darkMode;
+        localStorage.setItem('darkMode', this.darkMode);
+        if (this.darkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }
+}" x-init="if (darkMode) document.documentElement.classList.add('dark');">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IMS Malaysia – Malaysian SST & LHDN e-Invoicing Management Platform</title>
+    <meta name="description" content="SST-compliant Tax Invoices, OCR Supplier Bill 2-Way PO Matching, Multi-Bank IBG Payouts & LHDN MyInvois Clearance for Malaysian Businesses.">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        indigo: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 950: '#1e1b4b' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons & Alpine.js -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-indigo-600 dark:bg-indigo-700 text-white text-xs py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
+        <span class="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold uppercase tracking-wider">LHDN Mandate Ready</span>
+        <span>Compliant with Sales & Service Tax Act 2018 & LHDN MyInvois UBL 2.1 JSON Format</span>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-200/80 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                        <i data-lucide="receipt-text" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white">IMS Malaysia</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">v2.0</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-medium">Invoice Management System</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Links & Theme Toggle -->
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <a href="#features" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Core Features</a>
+                        <a href="#interactive-demo" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Interactive Demo</a>
+                        <a href="#modes" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Compliance Engine</a>
+                        <a href="https://github.com/mralif93/invoice-management-system" target="_blank" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1">
+                            <i data-lucide="github" class="w-3.5 h-3.5"></i>
+                            <span>GitHub</span>
+                        </a>
+                    </nav>
+
+                    <!-- Dark Mode Switcher -->
+                    <button type="button" @click="toggleDarkMode()" class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 transition-colors" title="Toggle Dark/Light Mode">
+                        <i x-show="!darkMode" data-lucide="moon" class="w-4 h-4"></i>
+                        <i x-show="darkMode" data-lucide="sun" class="w-4 h-4" x-cloak></i>
+                    </button>
+
+                    <a href="#interactive-demo" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all transform hover:-translate-y-0.5">
+                        <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                        <span>Live Demo</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28">
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[380px] bg-gradient-to-tr from-indigo-500/20 via-sky-500/10 to-emerald-500/20 blur-3xl rounded-full -z-10 pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold uppercase tracking-wider mb-6 shadow-xs">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                <span>Malaysian SST 8%/6% & LHDN MyInvois Certified</span>
+            </div>
+
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white max-w-4xl mx-auto leading-[1.15]">
+                Fast Invoicing in <span class="bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 bg-clip-text text-transparent">MYR</span> with Zero Friction
+            </h1>
+
+            <p class="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Create statutory tax invoices in 60 seconds, match supplier bills via OCR 2-way PO matching, and switch seamlessly between offline Standalone mode and live LHDN e-Invoicing.
+            </p>
+
+            <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+                <a href="#interactive-demo" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all transform hover:-translate-y-0.5">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <span>Try Interactive Invoice Builder</span>
+                </a>
+                <a href="https://github.com/mralif93/invoice-management-system" target="_blank" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 font-bold text-sm sm:text-base shadow-xs transition-all transform hover:-translate-y-0.5">
+                    <i data-lucide="github" class="w-5 h-5"></i>
+                    <span>View GitHub Source</span>
+                </a>
+            </div>
+
+            <!-- Key Feature Badges -->
+            <div class="mt-14 pt-8 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                    <span>SST Act 2018 (8% & 6% Rates)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                    <span>LHDN MyInvois (UBL 2.1 JSON)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                    <span>DuitNow Dynamic QR & FPX Ready</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                    <span>Multi-Bank Batch Payout (Maybank / CIMB)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Live Demo Section -->
+    <section id="interactive-demo" class="py-16 bg-white dark:bg-slate-900 border-y border-slate-200/80 dark:border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-2xl mx-auto mb-12 space-y-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Interactive Prototype</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">Experience the Live Tax Invoice Builder</h2>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Test real-time Malaysian Ringgit tax calculations and generate live A4 PDF previews directly in your browser.</p>
+            </div>
+
+            <!-- Builder Grid -->
+            <div class="w-full flex flex-col xl:flex-row gap-6 items-start">
+                
+                <!-- Main Invoice Form -->
+                <div class="w-full xl:flex-1 bg-slate-50 dark:bg-slate-950/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-6">
+                    
+                    <!-- Customer & Invoice Metadata -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Customer / Buyer Entity</label>
+                            <input type="text" x-model="customerName" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tax Identification (TIN)</label>
+                            <input type="text" x-model="customerTin" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 font-mono text-indigo-600 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Invoice Number</label>
+                            <input type="text" x-model="invoiceNo" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 font-mono font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Issue Date</label>
+                            <input type="date" x-model="issueDate" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2">
+                        </div>
+                    </div>
+
+                    <!-- Line Items Table -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">Invoice Line Items & SST Rate</span>
+                            <button type="button" @click="addItem()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 text-[11px] font-bold hover:bg-indigo-100">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Add Item
+                            </button>
+                        </div>
+
+                        <div class="space-y-2.5">
+                            <template x-for="(item, index) in items" :key="index">
+                                <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-3 text-xs">
+                                    <span class="font-mono font-bold text-slate-400 w-5" x-text="index + 1"></span>
+                                    <input type="text" x-model="item.description" placeholder="Description..." class="flex-1 w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-1.5 text-slate-900 dark:text-white">
+                                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                                        <input type="number" min="1" x-model="item.qty" class="w-14 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent py-1.5 text-center font-mono">
+                                        <input type="number" step="0.01" x-model="item.price" class="w-24 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent py-1.5 text-right font-mono">
+                                        <select x-model="item.sst" class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent py-1.5 font-bold">
+                                            <option value="8">8%</option>
+                                            <option value="6">6%</option>
+                                            <option value="0">0%</option>
+                                        </select>
+                                        <button type="button" @click="removeItem(index)" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Calculation & Toolbar Card -->
+                <div class="w-full xl:w-80 p-6 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 space-y-5">
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Live Calculation</h3>
+
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Subtotal (Excl. Tax):</span>
+                            <span class="font-mono font-bold text-slate-900 dark:text-white" x-text="'MYR ' + formatMoney(subtotal)"></span>
+                        </div>
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Service Tax (SST):</span>
+                            <span class="font-mono font-bold text-slate-900 dark:text-white" x-text="'MYR ' + formatMoney(sstTotal)"></span>
+                        </div>
+                        <div class="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between">
+                            <span class="font-extrabold text-slate-900 dark:text-white">TOTAL PAYABLE:</span>
+                            <span class="font-mono font-extrabold text-base text-indigo-600 dark:text-indigo-400" x-text="'MYR ' + formatMoney(grandTotal)"></span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Mode Box -->
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 flex items-center justify-center font-bold">
+                            <i data-lucide="qr-code" class="w-4 h-4"></i>
+                        </div>
+                        <div class="text-[11px]">
+                            <p class="font-bold text-slate-900 dark:text-white">DuitNow Dynamic QR</p>
+                            <p class="text-slate-500 text-[10px]">Instant Bank App Settlement</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-2 pt-2">
+                        <button type="button" @click="showPdfModal = true; $nextTick(() => { if (window.lucide) window.lucide.createIcons(); })" class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                            <i data-lucide="eye" class="w-4 h-4"></i>
+                            <span>Preview PDF Invoice</span>
+                        </button>
+                        <button type="button" onclick="window.print()" class="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold transition-colors">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span>Print / Export PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PDF Preview Modal -->
+    <div x-show="showPdfModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div @click.away="showPdfModal = false" class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <div class="h-14 px-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-600"></i>
+                    <span class="font-bold text-xs sm:text-sm">Official Malaysian Tax Invoice PDF</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="window.print()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold">Print</button>
+                    <button type="button" @click="showPdfModal = false" class="p-1 text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+
+            <div class="p-8 overflow-y-auto space-y-6 text-xs text-slate-800 dark:text-slate-200">
+                <!-- Header -->
+                <div class="flex justify-between border-b pb-6">
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-900 dark:text-white">Nexa Digital Sdn. Bhd.</h2>
+                        <p class="text-[11px] text-slate-500 mt-1">SSM: 202101034567 | TIN: C25890123000 | SST: W10-1808-32000045</p>
+                        <p class="text-[11px] text-slate-500">Bangsar South, 59200 Kuala Lumpur, Malaysia</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-extrabold text-[10px]">TAX INVOICE</span>
+                        <p class="text-base font-mono font-extrabold mt-1" x-text="invoiceNo"></p>
+                        <p class="text-[11px] text-slate-500 font-mono" x-text="'Date: ' + issueDate"></p>
+                    </div>
+                </div>
+
+                <!-- Billed To -->
+                <div class="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">BILLED TO:</span>
+                    <p class="font-bold text-sm text-slate-900 dark:text-white" x-text="customerName"></p>
+                    <p class="text-[11px] text-slate-500 font-mono" x-text="'TIN: ' + customerTin"></p>
+                </div>
+
+                <!-- Items -->
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b text-slate-400 uppercase text-[10px]">
+                            <th class="py-2">Description</th>
+                            <th class="py-2 text-center">Qty</th>
+                            <th class="py-2 text-right">Price</th>
+                            <th class="py-2 text-center">Tax</th>
+                            <th class="py-2 text-right">Total (MYR)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        <template x-for="item in items">
+                            <tr>
+                                <td class="py-2 font-medium" x-text="item.description || 'Untitled item'"></td>
+                                <td class="py-2 text-center font-mono" x-text="item.qty"></td>
+                                <td class="py-2 text-right font-mono" x-text="formatMoney(item.price)"></td>
+                                <td class="py-2 text-center font-bold font-mono" x-text="item.sst + '%'"></td>
+                                <td class="py-2 text-right font-mono font-bold" x-text="formatMoney((item.qty * item.price) + ((item.qty * item.price) * (item.sst/100)))"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <!-- Summary -->
+                <div class="flex justify-between border-t pt-4">
+                    <div class="text-[11px] text-slate-500">
+                        <p class="font-bold text-slate-800 dark:text-slate-200">Payment: Maybank (5140-1234-8899)</p>
+                        <p>DuitNow ID: 202101034567</p>
+                    </div>
+                    <div class="w-56 space-y-1 text-xs">
+                        <div class="flex justify-between"><span>Subtotal:</span><span class="font-mono font-bold" x-text="'MYR ' + formatMoney(subtotal)"></span></div>
+                        <div class="flex justify-between"><span>SST Total:</span><span class="font-mono font-bold" x-text="'MYR ' + formatMoney(sstTotal)"></span></div>
+                        <div class="flex justify-between border-t pt-1 font-bold text-sm text-indigo-600"><span>Total:</span><span class="font-mono" x-text="'MYR ' + formatMoney(grandTotal)"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public Footer -->
+    <footer class="border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+                <i data-lucide="receipt" class="w-4 h-4 text-indigo-600"></i>
+                <span class="font-bold text-slate-900 dark:text-white">IMS Malaysia</span>
+                <span>• Malaysian Statutory e-Invoicing & SST Platform</span>
+            </div>
+            <div>
+                <a href="https://github.com/mralif93/invoice-management-system" target="_blank" class="hover:text-indigo-600 font-semibold">GitHub Repository</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
