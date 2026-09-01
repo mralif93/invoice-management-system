@@ -133,10 +133,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 \App\Models\InvoiceItem::create([
                     'invoice_id' => $invoice->id,
                     'description' => $item['description'],
+                    'classification_code' => '001',
                     'quantity' => $item['qty'],
                     'unit_price' => $item['unit_price'],
-                    'tax_rate' => $item['sst_rate'],
-                    'tax_amount' => $lineTax,
+                    'discount_amount' => 0.00,
+                    'sst_rate' => $item['sst_rate'],
+                    'sst_amount' => $lineTax,
+                    'net_amount' => $lineSubtotal,
                     'total_amount' => $lineSubtotal + $lineTax,
                 ]);
             }

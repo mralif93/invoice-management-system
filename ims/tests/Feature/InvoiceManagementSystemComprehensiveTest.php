@@ -178,24 +178,82 @@ class InvoiceManagementSystemComprehensiveTest extends TestCase
     }
 
     /**
-     * 9. Database Integrity & Precision Verification
+     * 10. Invoice Store Action & Validation Test (Feature & UI Functionality)
      */
-    public function test_database_records_and_tax_calculations_are_mathematically_sound(): void
+    public function test_admin_can_successfully_store_new_invoice_with_line_items(): void
     {
-        $invoices = Invoice::with('items')->get();
-        $this->assertGreaterThan(0, $invoices->count());
+        $customer = Customer::first();
+        $this->assertNotNull($customer);
 
-        foreach ($invoices as $inv) {
-            $this->assertNotNull($inv->invoice_number);
-            $this->assertGreaterThanOrEqual(0, $inv->grand_total);
-        }
+        $payload = [
+            'customer_id' => $customer->id,
+            'invoice_number' => 'INV-TEST-' . rand(1000, 9999),
+            'issue_date' => '2026-09-01',
+            'due_date' => '2026-10-01',
+            'po_number' => 'PO-TEST-99',
+            'einvoice_mode' => 'production',
+            'items' => [
+                [
+                    'description' => 'Enterprise System Integration',
+                    'qty' => 2,
+                    'unit_price' => 1000.00,
+                    'sst_rate' => 8,
+                ],
+                [
+                    'description' => 'Telecommunication Setup',
+                    'qty' => 1,
+                    'unit_price' => 500.00,
+                    'sst_rate' => 6,
+                ],
+            ],
+        ];
 
-        $bills = Bill::with('items')->get();
-        $this->assertGreaterThan(0, $bills->count());
+        $response = $this->actingAs($this->adminUser)->post('/admin/invoices', $payload);
 
-        foreach ($bills as $bill) {
-            $this->assertNotNull($bill->bill_number);
-            $this->assertGreaterThanOrEqual(0, $bill->grand_total);
-        }
+        $response->assertRedirect('/admin/invoices');
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('invoices', [
+            'invoice_number' => $payload['invoice_number'],
+            'customer_id' => $customer->id,
+            'subtotal' => 2500.00,
+            'tax_total' => 190.00, // (2000 * 0.08 = 160) + (500 * 0.06 = 30) = 190
+            'grand_total' => 2690.00,
+            'einvoice_mode' => 'production',
+        ]);
+
+        $createdInvoice = Invoice::where('invoice_number', $payload['invoice_number'])->first();
+        $this->assertCount(2, $createdInvoice->items);
+    }
+
+    public function test_invoice_store_validation_fails_on_empty_items_or_invalid_customer(): void
+    {
+        $response = $this->actingAs($this->adminUser)->post('/admin/invoices', [
+            'customer_id' => 99999, // Non-existent
+            'invoice_number' => 'INV-FAIL-1',
+            'issue_date' => '2026-09-01',
+            'due_date' => '2026-08-01', // Due date before issue date
+            'items' => [],
+        ]);
+
+        $response->assertSessionHasErrors(['customer_id', 'due_date', 'items']);
+    }
+
+    /**
+     * 11. UI Search & Multi-Filter Structure Test
+     */
+    public function test_invoices_and_bills_views_contain_interactive_filters(): void
+    {
+        $invoicesView = $this->actingAs($this->adminUser)->get('/admin/invoices');
+        $invoicesView->assertStatus(200);
+        $invoicesView->assertSee('x-model="search"', false);
+        $invoicesView->assertSee('x-model="statusFilter"', false);
+        $invoicesView->assertSee('x-model="modeFilter"', false);
+
+        $billsView = $this->actingAs($this->adminUser)->get('/admin/bills');
+        $billsView->assertStatus(200);
+        $billsView->assertSee('x-model="search"', false);
+        $billsView->assertSee('x-model="matchFilter"', false);
+        $billsView->assertSee('x-model="approvalFilter"', false);
     }
 }
