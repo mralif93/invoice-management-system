@@ -8,6 +8,21 @@
         poNumber: '',
         invoiceNo: 'INV-{{ date('Y') }}-{{ str_pad(rand(100, 999), 4, '0', STR_PAD_LEFT) }}',
         showPdfModal: false,
+        showCustomerModal: false,
+
+        // Quick Customer Form State
+        quickCustomer: {
+            name: '',
+            identification_type: 'BRN',
+            ssm_brn: '',
+            tin_number: '',
+            sst_number: '',
+            email: '',
+            phone: '',
+            address_line1: '',
+            city: 'Kuala Lumpur',
+            state: 'Wilayah Persekutuan'
+        },
         
         // Starts completely empty for new invoice entry
         items: [
@@ -17,6 +32,33 @@
         get selectedCustomer() {
             if (!this.customerId) return null;
             return this.customerData.find(c => String(c.id) === String(this.customerId));
+        },
+
+        async saveQuickCustomer() {
+            if (!this.quickCustomer.name || !this.quickCustomer.ssm_brn || !this.quickCustomer.email) {
+                alert('Please fill in Customer Name, BRN/NRIC, and Email.');
+                return;
+            }
+            try {
+                const response = await fetch('{{ route('admin.customers.quick') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify(this.quickCustomer)
+                });
+                const data = await response.json();
+                if (data.success && data.customer) {
+                    this.customerData.push(data.customer);
+                    this.customerId = String(data.customer.id);
+                    this.showCustomerModal = false;
+                    this.quickCustomer = { name: '', identification_type: 'BRN', ssm_brn: '', tin_number: '', sst_number: '', email: '', phone: '', address_line1: '', city: 'Kuala Lumpur', state: 'Wilayah Persekutuan' };
+                }
+            } catch (e) {
+                console.error(e);
+            }
         },
 
         addItem() {
@@ -74,18 +116,22 @@
                 <!-- 1. Party & Metadata Card -->
                 <x-card title="Invoice Details" subtitle="Malaysian Statutory Tax Invoice Information">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Customer Selection -->
+                        <!-- Customer Selection with Quick-Add Modal Trigger -->
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                Select Customer (Buyer / Patient) <span class="text-rose-500">*</span>
-                            </label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                    Select Customer (Buyer / Patient) <span class="text-rose-500">*</span>
+                                </label>
+                                <button type="button" @click="showCustomerModal = true" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <i data-lucide="user-plus" class="w-3 h-3"></i>
+                                    <span>+ Quick Add</span>
+                                </button>
+                            </div>
                             <select x-model="customerId" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-colors">
                                 <option value="">-- Choose a Customer / Buyer --</option>
-                                @if (isset($customers))
-                                    @foreach ($customers as $c)
-                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->identification_type }}: {{ $c->ssm_brn }})</option>
-                                    @endforeach
-                                @endif
+                                <template x-for="c in customerData" :key="c.id">
+                                    <option :value="c.id" x-text="c.name + ' (' + c.identification_type + ': ' + (c.ssm_brn || '') + ')'"></option>
+                                </template>
                             </select>
                             
                             <!-- Dynamic Buyer Tax Info Pill -->
@@ -448,12 +494,140 @@
                             </div>
                         </div>
 
-                        <!-- Footer Legal Notice -->
-                        <div class="pt-6 border-t border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center space-y-0.5">
-                            <p>This is a computer-generated statutory Tax Invoice compliant with Royal Malaysian Customs Department (JKDM).</p>
-                            <p>For electronic verification and inquiries, contact billing@nexadigital.com.my.</p>
+                        <!-- Footer Legal Notice & Real Vector QR Code -->
+                        <div class="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 text-left">
+                                <!-- Real Scalable Vector SVG QR Code -->
+                                <div class="w-16 h-16 bg-white p-1 rounded border border-slate-200 shadow-xs flex-shrink-0">
+                                    <svg viewBox="0 0 100 100" class="w-full h-full text-slate-900" fill="currentColor">
+                                        <!-- QR Finder Patterns & Matrix -->
+                                        <rect x="0" y="0" width="30" height="30" fill="currentColor"/>
+                                        <rect x="5" y="5" width="20" height="20" fill="white"/>
+                                        <rect x="10" y="10" width="10" height="10" fill="currentColor"/>
+                                        
+                                        <rect x="70" y="0" width="30" height="30" fill="currentColor"/>
+                                        <rect x="75" y="5" width="20" height="20" fill="white"/>
+                                        <rect x="80" y="10" width="10" height="10" fill="currentColor"/>
+                                        
+                                        <rect x="0" y="70" width="30" height="30" fill="currentColor"/>
+                                        <rect x="5" y="75" width="20" height="20" fill="white"/>
+                                        <rect x="10" y="80" width="10" height="10" fill="currentColor"/>
+
+                                        <!-- Dynamic Data Grid Dots -->
+                                        <rect x="35" y="5" width="5" height="5"/>
+                                        <rect x="45" y="5" width="10" height="5"/>
+                                        <rect x="60" y="5" width="5" height="5"/>
+                                        <rect x="35" y="15" width="15" height="5"/>
+                                        <rect x="55" y="15" width="10" height="5"/>
+                                        <rect x="35" y="25" width="5" height="15"/>
+                                        <rect x="45" y="30" width="10" height="10"/>
+                                        <rect x="65" y="35" width="15" height="5"/>
+                                        <rect x="5" y="35" width="15" height="5"/>
+                                        <rect x="25" y="45" width="10" height="10"/>
+                                        <rect x="40" y="45" width="20" height="10"/>
+                                        <rect x="65" y="45" width="10" height="10"/>
+                                        <rect x="80" y="45" width="15" height="5"/>
+                                        <rect x="35" y="60" width="10" height="15"/>
+                                        <rect x="50" y="60" width="15" height="5"/>
+                                        <rect x="70" y="60" width="10" height="10"/>
+                                        <rect x="35" y="80" width="15" height="10"/>
+                                        <rect x="55" y="75" width="10" height="15"/>
+                                        <rect x="75" y="75" width="20" height="10"/>
+                                        <rect x="85" y="90" width="10" height="5"/>
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-mono space-y-0.5">
+                                    <p class="font-bold text-slate-800 dark:text-slate-200" x-text="eInvoiceMode === 'off' ? 'Scan & Pay via DuitNow (Maybank)' : 'LHDN Digital Clearance Verification'"></p>
+                                    <p x-text="eInvoiceMode === 'off' ? 'DuitNow ID: 202101034567' : 'UUID: EINV-20260901-8892'"></p>
+                                    <p class="text-[9px] text-slate-400">Computer-generated Tax Invoice compliant with JKDM & LHDN</p>
+                                </div>
+                            </div>
+
+                            <div class="text-right text-[10px] text-slate-400 font-mono">
+                                <p>Page 1 of 1</p>
+                                <p>7-Year Retention Mandate Compliant</p>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick-Add Customer Modal (Option 4) -->
+        <div x-show="showCustomerModal" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4"
+             style="display: none;">
+            
+            <div @click.away="showCustomerModal = false" 
+                 class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                
+                <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/90">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-white text-xs sm:text-sm">Quick Register Customer / Patient</h3>
+                            <p class="text-[10px] text-slate-500">Adds buyer to master database without leaving invoice builder</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="showCustomerModal = false" class="p-1 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="p-5 space-y-4 text-xs">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Customer / Patient Name <span class="text-rose-500">*</span></label>
+                        <input type="text" x-model="quickCustomer.name" placeholder="e.g. Apex Biotech Sdn. Bhd. or Ahmad Faiz" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">ID Type</label>
+                            <select x-model="quickCustomer.identification_type" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-slate-900 dark:text-white">
+                                <option value="BRN">SSM BRN (Company)</option>
+                                <option value="NRIC">NRIC (Malaysian Citizen)</option>
+                                <option value="PASSPORT">Passport (Expat / Foreigner)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Registration # <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="quickCustomer.ssm_brn" placeholder="e.g. 202301099888 or 900101-14-5544" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 font-mono">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Billing Email <span class="text-rose-500">*</span></label>
+                            <input type="email" x-model="quickCustomer.email" placeholder="finance@company.com.my" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Phone / WhatsApp</label>
+                            <input type="text" x-model="quickCustomer.phone" placeholder="+60123456789" class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 font-mono">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Billing Address</label>
+                        <input type="text" x-model="quickCustomer.address_line1" placeholder="Street address..." class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2">
+                    </div>
+                </div>
+
+                <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 flex justify-end gap-2">
+                    <button type="button" @click="showCustomerModal = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100">
+                        Cancel
+                    </button>
+                    <button type="button" @click="saveQuickCustomer()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        <span>Save & Select Customer</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -40,9 +40,10 @@
                     <option value="2026-02">Period 2: Mar - Apr 2026</option>
                 </select>
 
-                <x-button variant="success" size="sm" icon="download" onclick="alert('Exporting SST-02 Excel spreadsheet (.xlsx)...')">
-                    Export Excel
-                </x-button>
+                <a href="{{ route('admin.reports.sst02.export') }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Export CSV / Excel</span>
+                </a>
                 <x-button variant="outline" size="sm" icon="printer" onclick="window.print()">
                     Print Return
                 </x-button>

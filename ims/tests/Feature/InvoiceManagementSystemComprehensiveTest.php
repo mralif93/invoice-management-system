@@ -256,4 +256,53 @@ class InvoiceManagementSystemComprehensiveTest extends TestCase
         $billsView->assertSee('x-model="matchFilter"', false);
         $billsView->assertSee('x-model="approvalFilter"', false);
     }
+
+    /**
+     * 12. Quick Customer Registration Test (Option 4)
+     */
+    public function test_quick_customer_registration_creates_and_returns_customer(): void
+    {
+        $payload = [
+            'name' => 'Apex Healthcare Clinics Sdn. Bhd.',
+            'identification_type' => 'BRN',
+            'ssm_brn' => '202401099888',
+            'tin_number' => 'C29988776655',
+            'sst_number' => 'W10-2401-998877',
+            'email' => 'finance@apexhealth.com.my',
+            'phone' => '+6012-345-6789',
+            'address_line1' => 'Solaris Dutamas, Publika',
+            'city' => 'Kuala Lumpur',
+            'state' => 'Wilayah Persekutuan',
+        ];
+
+        $response = $this->actingAs($this->adminUser)->postJson('/admin/customers/quick', $payload);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'customer' => [
+                'name' => 'Apex Healthcare Clinics Sdn. Bhd.',
+                'ssm_brn' => '202401099888',
+            ]
+        ]);
+
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Apex Healthcare Clinics Sdn. Bhd.',
+            'ssm_brn' => '202401099888',
+        ]);
+    }
+
+    /**
+     * 13. Reports CSV Export Streams Test (Option 3 & 5)
+     */
+    public function test_sst02_and_aging_reports_can_export_csv_streams(): void
+    {
+        $sst02Export = $this->actingAs($this->adminUser)->get('/admin/reports/sst-02/export');
+        $sst02Export->assertStatus(200);
+        $sst02Export->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        $agingExport = $this->actingAs($this->adminUser)->get('/admin/reports/aging/export');
+        $agingExport->assertStatus(200);
+        $agingExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
 }
