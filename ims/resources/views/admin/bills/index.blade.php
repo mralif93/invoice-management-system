@@ -2,7 +2,13 @@
     <div class="space-y-5" x-data="{
         search: '',
         matchFilter: 'all',
-        approvalFilter: 'all'
+        approvalFilter: 'all',
+        showExportConfirm: false,
+
+        proceedExport() {
+            this.showExportConfirm = false;
+            window.location.href = '{{ route('admin.bills.export') }}';
+        }
     }">
         <!-- Top Stats Row -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -12,13 +18,55 @@
             <x-stat-card title="Input Tax (SST Claim)" value="MYR {{ number_format($bills->sum('tax_total'), 2) }}" subtitle="Eligible for SST-02 Deduction" icon="file-spreadsheet" iconVariant="emerald" />
         </div>
 
+        <!-- Export Bills Confirmation Modal -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm AP Bills Registry Export" 
+            subtitle="Supplier Invoices & 2-Way Match Status Data Export" 
+            icon="file-spreadsheet" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Total Records to Export:</span>
+                        <span class="font-bold font-mono text-slate-900 dark:text-white">{{ $bills->count() }} Supplier Bills</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Total AP Payables Volume:</span>
+                        <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400">MYR {{ number_format($bills->sum('grand_total'), 2) }}</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Are you sure you want to export the complete Accounts Payable bills registry including 2-Way match and approval statuses in CSV format?
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Download CSV</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
+
         <!-- Main Bills Card Table -->
         <x-card title="Supplier Invoices Registry (Accounts Payable)" subtitle="2-Way Matching and Multi-Level Manager Approvals">
             <x-slot:action>
-                <a href="{{ route('admin.bills.upload') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
-                    <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
-                    <span>Upload Bill (OCR)</span>
-                </a>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="showExportConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Export CSV</span>
+                    </button>
+                    <a href="{{ route('admin.bills.upload') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+                        <span>Upload Bill (OCR)</span>
+                    </a>
+                </div>
             </x-slot:action>
 
             <!-- Filters Bar -->

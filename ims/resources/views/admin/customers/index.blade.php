@@ -1,5 +1,11 @@
 <x-layouts.admin header="Customers & Patients (Buyers)">
-    <div class="space-y-5">
+    <div class="space-y-5" x-data="{
+        showExportConfirm: false,
+        proceedExport() {
+            this.showExportConfirm = false;
+            window.location.href = '{{ route('admin.customers.export') }}';
+        }
+    }">
         <!-- Top Stats Row -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <x-stat-card title="Total Buyers" value="{{ $customers->count() }}" subtitle="Registered in Master Database" icon="users" iconVariant="indigo" />
@@ -7,8 +13,50 @@
             <x-stat-card title="Individual / Patients (B2C)" value="{{ $customers->whereIn('identification_type', ['NRIC', 'PASSPORT'])->count() }}" subtitle="Personal Tax Relief Eligible" icon="user-check" iconVariant="amber" />
         </div>
 
+        <!-- Export Customers Confirmation Modal -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm Customers Directory Export" 
+            subtitle="Master Accounts Receivable Directory Data (CSV)" 
+            icon="file-spreadsheet" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Total Customer Records:</span>
+                        <span class="font-bold font-mono text-slate-900 dark:text-white">{{ $customers->count() }} Buyers</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Corporate SSM BRN Verified:</span>
+                        <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400">{{ $customers->where('identification_type', 'BRN')->count() }} Companies</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Are you sure you want to export the master customer directory including Malaysian TIN numbers, BRN identifiers, and contact details in CSV format?
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Download CSV</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
+
         <!-- Master Registry Card -->
         <x-card title="Customer & Patient Directory" subtitle="Accounts Receivable Master Database with Malaysian Statutory Identifiers">
+            <x-slot:action>
+                <button type="button" @click="showExportConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Export CSV</span>
+                </button>
+            </x-slot:action>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead>

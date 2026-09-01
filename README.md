@@ -4,7 +4,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Alpine.js](https://img.shields.io/badge/Alpine.js-3.x-8BC0D0?style=for-the-badge&logo=alpine.js&logoColor=white)](https://alpinejs.dev)
 [![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![Tests](https://img.shields.io/badge/Tests-47%20Passed%20(113%20Assertions)-emerald?style=for-the-badge)](https://phpunit.de)
+[![Tests](https://img.shields.io/badge/Tests-49%20Passed%20(139%20Assertions)-emerald?style=for-the-badge)](https://phpunit.de)
 
 A lightweight, modern, and high-performance **Invoice & e-Invoicing Management System** tailored specifically for Malaysian businesses, SMEs, corporate accounting teams, and medical clinics.
 
@@ -26,13 +26,13 @@ Designed for full Malaysian statutory compliance with the **Sales Tax & Service 
 * **Instant Sharing:** 1-click WhatsApp billing link dispatcher with online settlement links.
 
 ### 2. 🧾 Accounts Payable (AP) & OCR 2-Way Match
-* **Supplier Bill Ingestion:** Drag-and-drop PDF/image upload with simulated Optical Character Recognition (OCR).
+* **Supplier Bill Ingestion & Confirmation:** Drag-and-drop PDF/image upload with simulated Optical Character Recognition (OCR) backed by confirmation dialogs before document processing.
 * **Automated 2-Way Matching:** Compares Supplier Bill vs. Approved Purchase Order (PO) with automated variance calculation and $\pm \text{RM } 5.00$ tolerance checks.
-* **Manager Approval Workflows:** Multi-tier authorization threshold for bills exceeding $\text{RM } 5,000$.
+* **Manager Approval Workflows with Confirmation:** Multi-tier authorization threshold for bills exceeding $\text{RM } 5,000$ with double-confirmation dialogs before releasing bank payout queue.
 * **Duplicate Detection:** Automatic verification preventing double-billing on supplier reference numbers.
 
 ### 3. 🏦 Domestic Banking & Batch Payouts
-* **Multi-Bank Batch IBG File Generator:** Exports standardized payment files for corporate bank portals:
+* **Multi-Bank Batch IBG File Generator with Confirmation:** Confirms beneficiary count, debit bank account, and total disbursement sum before generating standardized payment files:
   * **Maybank MasS / 2E Format** (`.csv`)
   * **CIMB BizChannel Batch Format** (`.txt`)
   * **Public Bank Enterprise** (`.csv`)
@@ -44,9 +44,13 @@ Designed for full Malaysian statutory compliance with the **Sales Tax & Service 
   * **Standard Mode (`OFF`):** Instant offline invoicing with DuitNow QR for internal bookkeeping and zero-friction operations.
   * **Sandbox Mode:** Connects to LHDN Preprod API for staff onboarding, testing, and mock clearance UUIDs.
   * **LHDN Live Mode (`ON`):** Real-time statutory clearance with official LHDN verification QR codes linking to MyInvois portal.
-* **Real CSV / Excel Exports:** 1-click download for **JKDM SST-02 Return CSV** (Box 11a, 11b, 11d, 12, 13) and **AR/AP Aging Ledger CSV**.
+* **Confirmed Real CSV / Excel Exports:** Interactive confirmation modals verify record counts and total financial amounts before downloading:
+  * **JKDM SST-02 Return CSV** (Box 11a, 11b, 11d, 12, 13)
+  * **AR & AP Aging Ledger CSV** (`0-30`, `31-60`, `61-90`, and `90+` critical days)
+  * **AR Invoices Master Registry CSV**
+  * **AP Bills Master Registry CSV**
+  * **Customers & Vendors Master Directories CSV**
 * **Real-Time Client-Side Filter Engine:** Instant multi-parameter search and status/mode filtering across Invoices and Supplier Bills with zero page reloads.
-* **AR & AP Aging Ledger:** 4-tier aging buckets (`0-30`, `31-60`, `61-90`, and `90+` critical days) with drill-down views.
 
 ---
 
@@ -145,7 +149,7 @@ Access the application in your browser:
 
 ## 🧪 Automated Testing Suite
 
-The repository includes complete **Unit**, **Feature**, and **Smoke Test Suites** (**47 tests, 113 assertions**):
+The repository includes complete **Unit**, **Feature**, and **Smoke Test Suites** (**49 tests, 139 assertions**):
 
 ```bash
 cd ims

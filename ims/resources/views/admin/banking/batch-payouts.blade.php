@@ -3,10 +3,28 @@
         bankFormat: 'maybank',
         selectedBills: ['1', '2'],
         exportSuccess: false,
+        showExportConfirm: false,
         
-        triggerExport() {
+        get bankName() {
+            const map = {
+                'maybank': 'Maybank MasS / 2E Format (.csv)',
+                'cimb': 'CIMB BizChannel Batch Format (.txt)',
+                'public': 'Public Bank Enterprise PB (.csv)',
+                'rhb': 'RHB Reflex Auto-Debit/IBG (.txt)'
+            };
+            return map[this.bankFormat] || 'Corporate Bank Format';
+        },
+
+        confirmExport() {
+            this.showExportConfirm = true;
+            this.$nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); });
+        },
+
+        proceedExport() {
+            this.showExportConfirm = false;
             this.exportSuccess = true;
-            setTimeout(() => { this.exportSuccess = false; }, 4000);
+            setTimeout(() => { this.exportSuccess = false; }, 5000);
+            this.$refs.exportForm.submit();
         }
     }">
         <!-- Top Stats Row -->
@@ -15,6 +33,56 @@
             <x-stat-card title="Batch IBG File Format" value="Maybank MasS" subtitle="Corporate Autopay Format" icon="file-spreadsheet" iconVariant="indigo" />
             <x-stat-card title="Payment Processing" value="Instant T+0" subtitle="Multi-Bank Direct Clearing" icon="clock" iconVariant="amber" />
         </div>
+
+        <!-- Hidden Form for Native Batch Download -->
+        <form x-ref="exportForm" method="POST" action="{{ route('admin.banking.batch-payouts.export') }}" class="hidden">
+            @csrf
+            <input type="hidden" name="bank" :value="bankFormat">
+        </form>
+
+        <!-- Confirmation Modal for Bank Batch Payout -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm Corporate Bank Batch Payout Export" 
+            subtitle="Generates bank-spec encrypted batch payment instruction file" 
+            icon="credit-card" 
+            maxWidth="lg"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Target Bank Portal:</span>
+                        <span class="font-bold text-indigo-700 dark:text-indigo-300" x-text="bankName"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Debit Origin Account:</span>
+                        <span class="font-mono font-bold text-slate-800 dark:text-slate-200">5140-1234-8899 (Maybank)</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Total Beneficiaries:</span>
+                        <span class="font-bold font-mono text-slate-800 dark:text-slate-200">2 Suppliers</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs border-t border-indigo-200/60 dark:border-indigo-800/60 pt-2">
+                        <span class="font-bold text-slate-700 dark:text-slate-300">Total Disbursement Amount:</span>
+                        <span class="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">MYR 13,546.00</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Please confirm that all beneficiary account numbers and payment amounts have been audited. Once generated, this batch file can be directly uploaded to your corporate internet banking portal.
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Generate Batch File</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
 
         <!-- Batch Generator Card -->
         <x-card title="Multi-Bank Batch Payout Generator" subtitle="Generate standardized CSV / Text files for direct corporate bank upload">
@@ -38,7 +106,7 @@
                 </div>
 
                 <div class="flex items-end">
-                    <button type="button" @click="triggerExport()" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <button type="button" @click="confirmExport()" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
                         <i data-lucide="download" class="w-4 h-4"></i>
                         <span>Generate & Export Batch File</span>
                     </button>
@@ -48,7 +116,7 @@
             <!-- Toast alert -->
             <div x-show="exportSuccess" x-transition class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
                 <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
-                <span><strong>Batch File Generated:</strong> <code>MAYBANK_PAYOUT_20260901.CSV</code> ready for portal upload.</span>
+                <span><strong>Batch File Generated:</strong> Batch payout file successfully downloaded and ready for corporate banking upload.</span>
             </div>
 
             <!-- Approved Payables Queue Table -->

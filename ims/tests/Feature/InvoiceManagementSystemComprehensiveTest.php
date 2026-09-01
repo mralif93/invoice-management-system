@@ -305,4 +305,69 @@ class InvoiceManagementSystemComprehensiveTest extends TestCase
         $agingExport->assertStatus(200);
         $agingExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
     }
+
+    /**
+     * 14. Comprehensive Invoices, Bills, Customers, Vendors & Bank Batch Export Tests
+     */
+    public function test_all_master_registries_and_batch_payouts_can_export_csv_streams(): void
+    {
+        // 1. Invoices Registry Export
+        $invoicesExport = $this->actingAs($this->adminUser)->get('/admin/invoices/export');
+        $invoicesExport->assertStatus(200);
+        $invoicesExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        // 2. Customers Directory Export
+        $customersExport = $this->actingAs($this->adminUser)->get('/admin/customers/export');
+        $customersExport->assertStatus(200);
+        $customersExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        // 3. AP Bills Registry Export
+        $billsExport = $this->actingAs($this->adminUser)->get('/admin/bills/export');
+        $billsExport->assertStatus(200);
+        $billsExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        // 4. Vendors Directory Export
+        $vendorsExport = $this->actingAs($this->adminUser)->get('/admin/vendors/export');
+        $vendorsExport->assertStatus(200);
+        $vendorsExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+
+        // 5. Corporate Bank Batch Payout Export
+        $payoutExport = $this->actingAs($this->adminUser)->post('/admin/banking/batch-payouts/export', [
+            'bank' => 'maybank'
+        ]);
+        $payoutExport->assertStatus(200);
+        $payoutExport->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    /**
+     * 15. Export & Ingestion Confirmation Modals Rendering Test
+     */
+    public function test_views_render_export_and_import_confirmation_modals_properly(): void
+    {
+        // SST-02 Return View with Confirmation Modal
+        $sst02View = $this->actingAs($this->adminUser)->get('/admin/reports/sst-02');
+        $sst02View->assertStatus(200);
+        $sst02View->assertSee('Confirm SST-02 Report Export');
+
+        // Aging View with Confirmation Modal
+        $agingView = $this->actingAs($this->adminUser)->get('/admin/reports/aging');
+        $agingView->assertStatus(200);
+        $agingView->assertSee('Confirm Aging Ledger Export');
+
+        // Invoices Index with Confirmation Modal
+        $invoicesView = $this->actingAs($this->adminUser)->get('/admin/invoices');
+        $invoicesView->assertStatus(200);
+        $invoicesView->assertSee('Confirm Invoices Registry Export');
+
+        // Bills Upload & Ingestion with Confirmation Modals
+        $uploadView = $this->actingAs($this->adminUser)->get('/admin/bills/upload');
+        $uploadView->assertStatus(200);
+        $uploadView->assertSee('Confirm Supplier Bill Upload');
+        $uploadView->assertSee('Confirm Bill Payout Approval');
+
+        // Banking Batch Payout View with Confirmation Modal
+        $bankingView = $this->actingAs($this->adminUser)->get('/admin/banking/batch-payouts');
+        $bankingView->assertStatus(200);
+        $bankingView->assertSee('Confirm Corporate Bank Batch Payout Export');
+    }
 }

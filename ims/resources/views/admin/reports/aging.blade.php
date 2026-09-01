@@ -1,14 +1,65 @@
 <x-layouts.admin header="AR & AP Aging Analysis">
-    <div class="space-y-5" x-data="{ tab: 'ar' }">
-        <!-- Tab Selector -->
-        <div class="flex items-center gap-2 p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 w-fit">
-            <button type="button" @click="tab = 'ar'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all" :class="tab === 'ar' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'">
-                Accounts Receivable (Customer Aging)
-            </button>
-            <button type="button" @click="tab = 'ap'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all" :class="tab === 'ap' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'">
-                Accounts Payable (Supplier Aging)
+    <div class="space-y-5" x-data="{ 
+        tab: 'ar',
+        showExportConfirm: false,
+
+        proceedExport() {
+            this.showExportConfirm = false;
+            window.location.href = '{{ route('admin.reports.aging.export') }}';
+        }
+    }">
+        <!-- Tab Selector & Export Action Bar -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 p-1 rounded-xl bg-slate-200/80 dark:bg-slate-800 w-fit">
+                <button type="button" @click="tab = 'ar'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all" :class="tab === 'ar' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'">
+                    Accounts Receivable (Customer Aging)
+                </button>
+                <button type="button" @click="tab = 'ap'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all" :class="tab === 'ap' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'">
+                    Accounts Payable (Supplier Aging)
+                </button>
+            </div>
+
+            <button type="button" @click="showExportConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export Aging CSV</span>
             </button>
         </div>
+
+        <!-- Aging Export Confirmation Modal -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm Aging Ledger Export" 
+            subtitle="Accounts Receivable & Accounts Payable Aging Report (MYR)" 
+            icon="file-spreadsheet" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Total AR Outstanding:</span>
+                        <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400">MYR 19,824.00</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Total AP Outstanding:</span>
+                        <span class="font-bold font-mono text-amber-600 dark:text-amber-400">MYR 13,546.00</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Do you want to proceed with downloading the comprehensive 0-30, 31-60, 61-90, and 90+ days aging ledger dataset in CSV format?
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Download CSV</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
 
         <!-- Aging Bucket Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-5 gap-3.5">

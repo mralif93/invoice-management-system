@@ -8,6 +8,7 @@
         tax6: 720.00,
         exempt: 5500.00,
         inputTax: 1140.00,
+        showExportConfirm: false,
 
         get totalOutputTax() {
             return this.tax8 + this.tax6;
@@ -19,6 +20,11 @@
 
         formatMoney(amount) {
             return (amount || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        proceedExport() {
+            this.showExportConfirm = false;
+            window.location.href = '{{ route('admin.reports.sst02.export') }}?period=' + this.period;
         }
     }">
         <!-- Top Control Bar -->
@@ -40,15 +46,55 @@
                     <option value="2026-02">Period 2: Mar - Apr 2026</option>
                 </select>
 
-                <a href="{{ route('admin.reports.sst02.export') }}" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                <button type="button" @click="showExportConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
                     <i data-lucide="download" class="w-3.5 h-3.5"></i>
                     <span>Export CSV / Excel</span>
-                </a>
+                </button>
                 <x-button variant="outline" size="sm" icon="printer" onclick="window.print()">
                     Print Return
                 </x-button>
             </div>
         </div>
+
+        <!-- Confirmation Modal for SST-02 Return Export -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm SST-02 Report Export" 
+            subtitle="Royal Malaysian Customs Department (JKDM) Statutory Submission" 
+            icon="file-spreadsheet" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Selected Filing Period:</span>
+                        <span class="font-bold font-mono text-emerald-700 dark:text-emerald-300" x-text="period === '2026-04' ? 'Jul - Aug 2026 (Period 4)' : (period === '2026-03' ? 'May - Jun 2026 (Period 3)' : 'Mar - Apr 2026 (Period 2)')"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Output Tax (Box 11d):</span>
+                        <span class="font-bold font-mono text-slate-900 dark:text-white" x-text="'MYR ' + formatMoney(totalOutputTax)"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 dark:text-slate-400">Net Payable (Box 13):</span>
+                        <span class="font-bold font-mono text-indigo-600 dark:text-indigo-400" x-text="'MYR ' + formatMoney(netPayable)"></span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Are you sure you want to generate and export this statutory CSV tax filing report? The file contains official calculation summaries compliant with Malaysian SST-02 schedules.
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Download CSV</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
 
         <!-- Summary Metric Cards Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">

@@ -10,6 +10,10 @@
         approved: false,
         fileUploaded: true,
         fileName: 'supplier_bill_inv8834.pdf',
+        pendingFile: null,
+        pendingFileName: '',
+        showUploadConfirm: false,
+        showApproveConfirm: false,
 
         get variance() {
             return Math.abs((parseFloat(this.billSubtotal) || 0) - (parseFloat(this.poSubtotal) || 0));
@@ -26,9 +30,22 @@
         handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                this.fileName = file.name;
-                this.fileUploaded = true;
+                this.pendingFile = file;
+                this.pendingFileName = file.name;
+                this.showUploadConfirm = true;
+                this.$nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); });
             }
+        },
+
+        proceedUpload() {
+            this.fileName = this.pendingFileName;
+            this.fileUploaded = true;
+            this.showUploadConfirm = false;
+        },
+
+        proceedApproval() {
+            this.approved = true;
+            this.showApproveConfirm = false;
         }
     }">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -160,10 +177,10 @@
                         <!-- Approval Actions -->
                         <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
                             <div class="flex items-center gap-2.5">
-                                <x-button @click="approved = true" variant="success" icon="check" class="flex-1 py-2.5">
+                                <x-button @click="showApproveConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" variant="success" icon="check" class="flex-1 py-2.5">
                                     Approve for Payout
                                 </x-button>
-                                <x-button variant="danger" icon="x" class="flex-1 py-2.5">
+                                <x-button variant="danger" icon="x" class="flex-1 py-2.5" onclick="alert('Dispute flagged. Procurement team notified for vendor reconciliation.')">
                                     Reject / Dispute
                                 </x-button>
                             </div>
@@ -176,5 +193,85 @@
                 </x-card>
             </div>
         </div>
+
+        <!-- 1. Bill File Upload & OCR Ingestion Confirmation Modal -->
+        <x-modal 
+            show="showUploadConfirm" 
+            title="Confirm Supplier Bill Upload" 
+            subtitle="Auto OCR Document Parsing & 2-Way Match Ingestion" 
+            icon="upload-cloud" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Selected File:</span>
+                        <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400 truncate max-w-[200px]" x-text="pendingFileName"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Document Type:</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Tax Invoice / Bill (PDF/Image)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Auto Actions:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">OCR + SST Tax Parsing + 2-Way Match</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Are you ready to upload and process this document? The system will parse the supplier bill totals, verify against Purchase Order PO-2026-0412, and check for duplicates.
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showUploadConfirm = false; pendingFile = null;" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedUpload()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Ingest Bill</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
+
+        <!-- 2. AP Bill Payout Approval Confirmation Modal -->
+        <x-modal 
+            show="showApproveConfirm" 
+            title="Confirm Bill Payout Approval" 
+            subtitle="Accounts Payable 2-Way Match Verification" 
+            icon="shield-check" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Supplier Bill Reference:</span>
+                        <span class="font-mono font-bold text-slate-800 dark:text-slate-200" x-text="billNumber"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Purchase Order Ref:</span>
+                        <span class="font-mono font-bold text-slate-800 dark:text-slate-200" x-text="poNumber"></span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-emerald-200/60 dark:border-emerald-800/60 pt-2">
+                        <span class="font-bold text-slate-700 dark:text-slate-300">Authorized Payout Amount:</span>
+                        <span class="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm" x-text="'MYR ' + formatMoney(billSubtotal)"></span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Confirming will authorize this invoice for corporate banking disbursement (Maybank/CIMB IBG Autopay) and credit the eligible input tax to your SST-02 return.
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showApproveConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedApproval()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Authorize Payout</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
     </div>
 </x-layouts.admin>

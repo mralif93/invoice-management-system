@@ -147,10 +147,83 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('admin.invoices.index')->with('success', "Invoice {$invoice->invoice_number} created successfully!");
         })->name('invoices.store');
 
+        Route::get('/invoices/export', function () {
+            $invoices = Invoice::with('customer')->orderBy('issue_date', 'desc')->get();
+            $filename = "INVOICES_REGISTRY_" . date('Ymd_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($invoices) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['ACCOUNTS RECEIVABLE INVOICES REGISTRY - MALAYSIA']);
+                fputcsv($file, ['Exported At', date('Y-m-d H:i:s')]);
+                fputcsv($file, ['Total Invoices', $invoices->count()]);
+                fputcsv($file, []);
+                fputcsv($file, ['Invoice #', 'PO Ref', 'Customer Name', 'Buyer TIN', 'Buyer BRN/NRIC', 'Issue Date', 'Due Date', 'Subtotal (MYR)', 'Tax Total (MYR)', 'Grand Total (MYR)', 'e-Invoice Mode', 'Status']);
+                foreach ($invoices as $inv) {
+                    fputcsv($file, [
+                        $inv->invoice_number,
+                        $inv->po_number ?? '-',
+                        $inv->customer->name ?? 'Walk-in',
+                        $inv->customer->tin_number ?? '-',
+                        $inv->customer->ssm_brn ?? '-',
+                        $inv->issue_date->format('Y-m-d'),
+                        $inv->due_date->format('Y-m-d'),
+                        number_format($inv->subtotal, 2, '.', ''),
+                        number_format($inv->tax_total, 2, '.', ''),
+                        number_format($inv->grand_total, 2, '.', ''),
+                        $inv->einvoice_mode,
+                        $inv->status,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        })->name('invoices.export');
+
         Route::get('/customers', function () {
             $customers = Customer::withCount('invoices')->orderBy('name')->get();
             return view('admin.customers.index', compact('customers'));
         })->name('customers.index');
+
+        Route::get('/customers/export', function () {
+            $customers = Customer::withCount('invoices')->orderBy('name')->get();
+            $filename = "CUSTOMERS_DIRECTORY_" . date('Ymd_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($customers) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['CUSTOMERS & PATIENTS DIRECTORY - MALAYSIA']);
+                fputcsv($file, ['Exported At', date('Y-m-d H:i:s')]);
+                fputcsv($file, ['Total Records', $customers->count()]);
+                fputcsv($file, []);
+                fputcsv($file, ['Name / Entity', 'ID Type', 'SSM BRN / NRIC', 'TIN Number', 'SST Number', 'Email', 'Phone', 'Address', 'City', 'State', 'Payment Terms (Days)']);
+                foreach ($customers as $c) {
+                    fputcsv($file, [
+                        $c->name,
+                        $c->identification_type,
+                        $c->ssm_brn,
+                        $c->tin_number ?? 'EI00000000020',
+                        $c->sst_number ?? '-',
+                        $c->email ?? '-',
+                        $c->phone ?? '-',
+                        $c->address_line1 ?? '-',
+                        $c->city ?? '-',
+                        $c->state ?? '-',
+                        $c->payment_terms_days,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        })->name('customers.export');
 
         // Quick Customer Store Endpoint (Option 4)
         Route::post('/customers/quick', function (\Illuminate\Http\Request $request) {
@@ -171,13 +244,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'name' => $validated['name'],
                 'identification_type' => $validated['identification_type'],
                 'ssm_brn' => $validated['ssm_brn'],
-                'tin_number' => $validated['tin_number'] ?? ($validated['identification_type'] === 'BRN' ? 'C' . rand(10000000000, 99999999999) : 'IG' . rand(10000000000, 99999999999)),
+                'tin_number' => $validated['tin_number'] ?? 'EI00000000020',
                 'sst_number' => $validated['sst_number'] ?? null,
                 'email' => $validated['email'],
                 'phone' => $validated['phone'] ?? null,
                 'address_line1' => $validated['address_line1'] ?? 'Kuala Lumpur, Malaysia',
                 'city' => $validated['city'] ?? 'Kuala Lumpur',
                 'state' => $validated['state'] ?? 'Wilayah Persekutuan',
+                'postal_code' => '50000',
                 'payment_terms_days' => 30,
             ]);
 
@@ -194,6 +268,41 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return view('admin.bills.index', compact('bills'));
         })->name('bills.index');
 
+        Route::get('/bills/export', function () {
+            $bills = Bill::with('vendor')->latest('bill_date')->get();
+            $filename = "AP_SUPPLIER_BILLS_" . date('Ymd_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($bills) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['ACCOUNTS PAYABLE SUPPLIER BILLS REGISTRY - MALAYSIA']);
+                fputcsv($file, ['Exported At', date('Y-m-d H:i:s')]);
+                fputcsv($file, ['Total Records', $bills->count()]);
+                fputcsv($file, []);
+                fputcsv($file, ['Bill #', 'PO Ref', 'Vendor / Supplier', 'Bill Date', 'Due Date', 'Subtotal (MYR)', 'Input Tax (MYR)', 'Grand Total (MYR)', '2-Way Match', 'Approval Status']);
+                foreach ($bills as $b) {
+                    fputcsv($file, [
+                        $b->bill_number,
+                        $b->po_number ?? '-',
+                        $b->vendor->name ?? 'Supplier',
+                        $b->bill_date->format('Y-m-d'),
+                        $b->due_date->format('Y-m-d'),
+                        number_format($b->subtotal, 2, '.', ''),
+                        number_format($b->tax_total, 2, '.', ''),
+                        number_format($b->grand_total, 2, '.', ''),
+                        $b->match_status,
+                        $b->approval_status,
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        })->name('bills.export');
+
         Route::get('/bills/upload', function () {
             $vendors = Vendor::orderBy('name')->get();
             return view('admin.bills.upload', compact('vendors'));
@@ -204,10 +313,67 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return view('admin.vendors.index', compact('vendors'));
         })->name('vendors.index');
 
+        Route::get('/vendors/export', function () {
+            $vendors = Vendor::withCount('bills')->orderBy('name')->get();
+            $filename = "VENDORS_DIRECTORY_" . date('Ymd_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($vendors) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['VENDORS & SUPPLIERS DIRECTORY - MALAYSIA']);
+                fputcsv($file, ['Exported At', date('Y-m-d H:i:s')]);
+                fputcsv($file, ['Total Records', $vendors->count()]);
+                fputcsv($file, []);
+                fputcsv($file, ['Vendor Name', 'SSM Registration', 'TIN Number', 'SST Number', 'Bank Name', 'Bank Account #', 'Email', 'Phone']);
+                foreach ($vendors as $v) {
+                    fputcsv($file, [
+                        $v->name,
+                        $v->ssm_brn,
+                        $v->tin_number ?? '-',
+                        $v->sst_number ?? '-',
+                        $v->bank_name ?? 'Maybank',
+                        $v->bank_account_number ?? '-',
+                        $v->email ?? '-',
+                        $v->phone ?? '-',
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        })->name('vendors.export');
+
         // 4. Banking & Payouts
         Route::get('/banking/batch-payouts', function () {
             return view('admin.banking.batch-payouts');
         })->name('banking.batch-payouts');
+
+        Route::post('/banking/batch-payouts/export', function (\Illuminate\Http\Request $request) {
+            $bank = $request->input('bank', 'maybank');
+            $filename = strtoupper($bank) . "_BATCH_PAYOUT_" . date('Ymd_His') . ".csv";
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$filename\"",
+            ];
+
+            $callback = function () use ($bank) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['CORPORATE BATCH PAYMENT AUTOPAY INSTRUCTION', strtoupper($bank)]);
+                fputcsv($file, ['Debit Account', '5140-1234-8899', 'Nexa Digital Sdn. Bhd.']);
+                fputcsv($file, ['Value Date', date('Y-m-d')]);
+                fputcsv($file, ['Total Records', '2', 'Total Amount', '13546.00']);
+                fputcsv($file, []);
+                fputcsv($file, ['Seq #', 'Beneficiary Name', 'Bank Name', 'Account Number', 'Amount (MYR)', 'Payment Ref', 'Recipient Email']);
+                fputcsv($file, ['1', 'Tekno Logistik Cloud Services Sdn. Bhd.', 'Maybank Berhad', '5140-9988-1122', '4536.00', 'SUPP-INV-8834', 'finance@teknologistik.com.my']);
+                fputcsv($file, ['2', 'Wira Network Telecom Sdn. Bhd.', 'CIMB Bank Berhad', '800-1234-5678', '9010.00', 'WIRA-TEL-2026-09', 'billing@wiranetwork.my']);
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        })->name('banking.batch-payouts.export');
 
         // 5. Tax & Compliance Reports & Exports (Option 3)
         Route::get('/reports/sst-02', function () {

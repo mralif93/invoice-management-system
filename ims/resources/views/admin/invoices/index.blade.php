@@ -2,7 +2,13 @@
     <div class="space-y-5" x-data="{
         search: '',
         statusFilter: 'all',
-        modeFilter: 'all'
+        modeFilter: 'all',
+        showExportConfirm: false,
+
+        proceedExport() {
+            this.showExportConfirm = false;
+            window.location.href = '{{ route('admin.invoices.export') }}';
+        }
     }">
         <!-- Top Stats Row -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -12,13 +18,55 @@
             <x-stat-card title="LHDN e-Invoices" value="{{ $lhdnCount }}" subtitle="Validated UUID Clearance" icon="shield-check" iconVariant="indigo" />
         </div>
 
+        <!-- Export Invoices Confirmation Modal -->
+        <x-modal 
+            show="showExportConfirm" 
+            title="Confirm Invoices Registry Export" 
+            subtitle="Accounts Receivable Master Invoices Data Export" 
+            icon="file-spreadsheet" 
+            maxWidth="md"
+        >
+            <div class="space-y-3">
+                <div class="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 space-y-2 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Total Records to Export:</span>
+                        <span class="font-bold font-mono text-slate-900 dark:text-white">{{ $invoices->count() }} Invoices</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-600 dark:text-slate-400">Total Billed Volume:</span>
+                        <span class="font-bold font-mono text-emerald-600 dark:text-emerald-400">MYR {{ number_format($totalInvoiced, 2) }}</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Are you sure you want to export the entire AR customer invoices registry in CSV format?
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" @click="showExportConfirm = false" class="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="proceedExport()" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Confirm & Download CSV</span>
+                </button>
+            </x-slot:footer>
+        </x-modal>
+
         <!-- Main Invoices Card Table -->
         <x-card title="All Customer Invoices" subtitle="Accounts Receivable Registry & Tax Invoices">
             <x-slot:action>
-                <a href="{{ route('admin.invoices.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
-                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                    <span>New Invoice</span>
-                </a>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="showExportConfirm = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Export CSV</span>
+                    </button>
+                    <a href="{{ route('admin.invoices.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>New Invoice</span>
+                    </a>
+                </div>
             </x-slot:action>
 
             <!-- Filters Bar -->
