@@ -4,7 +4,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Alpine.js](https://img.shields.io/badge/Alpine.js-3.x-8BC0D0?style=for-the-badge&logo=alpine.js&logoColor=white)](https://alpinejs.dev)
 [![PHP](https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![Tests](https://img.shields.io/badge/Tests-43%20Passed%20(103%20Assertions)-emerald?style=for-the-badge)](https://phpunit.de)
+[![Tests](https://img.shields.io/badge/Tests-47%20Passed%20(113%20Assertions)-emerald?style=for-the-badge)](https://phpunit.de)
 
 A lightweight, modern, and high-performance **Invoice & e-Invoicing Management System** tailored specifically for Malaysian businesses, SMEs, corporate accounting teams, and medical clinics.
 
@@ -20,8 +20,10 @@ Designed for full Malaysian statutory compliance with the **Sales Tax & Service 
   * Corporate buyers with SSM Business Registration Number (BRN) and SST exemption codes.
   * Individual clinic patients with NRIC or Expat Passport numbers for personal tax relief claims.
   * Consolidated General Public walk-in e-Invoicing (`TIN: EI00000000020`).
+* **In-Context Quick Customer Registration Modal:** Register a new B2B Company or B2C Patient directly from within the invoice builder without leaving or refreshing the page.
 * **Interactive Live PDF Preview:** In-browser A4 Tax Invoice document rendering with 1-click direct print and PDF export.
-* **Instant Sharing:** 1-click WhatsApp billing link dispatcher with DuitNow online settlement links.
+* **Vector SVG QR Code Engine:** High-precision scalable vector QR codes dynamically switching between **DuitNow Dynamic QR** and **LHDN Clearance QR**.
+* **Instant Sharing:** 1-click WhatsApp billing link dispatcher with online settlement links.
 
 ### 2. 🧾 Accounts Payable (AP) & OCR 2-Way Match
 * **Supplier Bill Ingestion:** Drag-and-drop PDF/image upload with simulated Optical Character Recognition (OCR).
@@ -42,7 +44,8 @@ Designed for full Malaysian statutory compliance with the **Sales Tax & Service 
   * **Standard Mode (`OFF`):** Instant offline invoicing with DuitNow QR for internal bookkeeping and zero-friction operations.
   * **Sandbox Mode:** Connects to LHDN Preprod API for staff onboarding, testing, and mock clearance UUIDs.
   * **LHDN Live Mode (`ON`):** Real-time statutory clearance with official LHDN verification QR codes linking to MyInvois portal.
-* **SST-02 Tax Return Report:** Automated bi-monthly JKDM tax return computation (Box 11a Standard 8% Service Tax, Box 11b Specific 6% Tax, and Input Tax deductions).
+* **Real CSV / Excel Exports:** 1-click download for **JKDM SST-02 Return CSV** (Box 11a, 11b, 11d, 12, 13) and **AR/AP Aging Ledger CSV**.
+* **Real-Time Client-Side Filter Engine:** Instant multi-parameter search and status/mode filtering across Invoices and Supplier Bills with zero page reloads.
 * **AR & AP Aging Ledger:** 4-tier aging buckets (`0-30`, `31-60`, `61-90`, and `90+` critical days) with drill-down views.
 
 ---
@@ -78,7 +81,7 @@ invoice-management-system/
     │       ├── components/    # Blade components (<x-card>, <x-button>, <x-badge>, etc.)
     │       ├── admin/         # Admin views (invoices, bills, customers, vendors, banking, reports, settings)
     │       └── welcome.blade.php
-    ├── routes/web.php         # Web routes
+    ├── routes/web.php         # Web routes & streaming export endpoints
     └── tests/
         ├── Unit/              # SST, 2-Way Match & Model relationship Unit tests
         └── Feature/           # End-to-end Comprehensive & Smoke test suites
@@ -142,7 +145,7 @@ Access the application in your browser:
 
 ## 🧪 Automated Testing Suite
 
-The repository includes complete **Unit**, **Feature**, and **Smoke Test Suites** (43 tests, 103 assertions):
+The repository includes complete **Unit**, **Feature**, and **Smoke Test Suites** (**47 tests, 113 assertions**):
 
 ```bash
 cd ims
@@ -154,7 +157,7 @@ php artisan test
   * `TaxAndFinancialCalculationTest.php`: SST $8\%$, $6\%$, and $0\%$ formulas, 2-way match variance tolerance ($\pm \text{RM } 5.00$).
   * `DomainModelRelationshipTest.php`: Eloquent model relationships and cascade rules.
 * **Feature & Smoke Tests (`tests/Feature/`):**
-  * `InvoiceManagementSystemComprehensiveTest.php`: Full lifecycle user auth, AR invoice generation, AP matching, and reporting.
+  * `InvoiceManagementSystemComprehensiveTest.php`: Full lifecycle user auth, AR invoice generation & store persistence, Quick Customer modal creation, CSV export streams, AP matching, and reporting.
   * `SmokeAllPagesTest.php`: Tests every single public and admin URL endpoint for `HTTP 200/302` response.
 
 ---
