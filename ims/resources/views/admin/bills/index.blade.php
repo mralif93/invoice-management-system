@@ -1,5 +1,9 @@
 <x-layouts.admin header="Supplier Bills (AP)">
-    <div class="space-y-5">
+    <div class="space-y-5" x-data="{
+        search: '',
+        matchFilter: 'all',
+        approvalFilter: 'all'
+    }">
         <!-- Top Stats Row -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <x-stat-card title="Total AP Bills" value="MYR {{ number_format($bills->sum('grand_total'), 2) }}" subtitle="{{ $bills->count() }} Registered Bills" icon="receipt" iconVariant="indigo" />
@@ -16,6 +20,28 @@
                     <span>Upload Bill (OCR)</span>
                 </a>
             </x-slot:action>
+
+            <!-- Filters Bar -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+                <div class="relative flex-1 max-w-sm">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    <input type="text" x-model="search" placeholder="Search bill #, supplier name, PO..." class="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-9 pr-3 py-2 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-colors">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select x-model="matchFilter" class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2">
+                        <option value="all">All 2-Way Matches</option>
+                        <option value="matched">Matched (0% Var)</option>
+                        <option value="variance_detected">Variance Flagged</option>
+                    </select>
+
+                    <select x-model="approvalFilter" class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-3 py-2">
+                        <option value="all">All Approvals</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending_approval">Pending Approval</option>
+                    </select>
+                </div>
+            </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
@@ -34,7 +60,17 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                         @forelse ($bills as $bill)
-                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                                x-show="(
+                                    search === '' || 
+                                    '{{ strtolower($bill->bill_number) }}'.includes(search.toLowerCase()) || 
+                                    '{{ strtolower($bill->vendor->name ?? '') }}'.includes(search.toLowerCase()) || 
+                                    '{{ strtolower($bill->po_number ?? '') }}'.includes(search.toLowerCase())
+                                ) && (
+                                    matchFilter === 'all' || '{{ $bill->match_status }}' === matchFilter
+                                ) && (
+                                    approvalFilter === 'all' || '{{ $bill->approval_status }}' === approvalFilter
+                                )">
                                 <td class="py-3 font-mono font-bold text-amber-600 dark:text-amber-400">{{ $bill->bill_number }}</td>
                                 <td class="py-3 text-slate-900 dark:text-white font-bold">{{ $bill->vendor->name ?? 'Unknown Vendor' }}</td>
                                 <td class="py-3 font-mono text-slate-500">{{ $bill->po_number ?? 'Direct Invoice' }}</td>

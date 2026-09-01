@@ -63,7 +63,17 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                         @forelse ($invoices as $inv)
-                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                                x-show="(
+                                    search === '' || 
+                                    '{{ strtolower($inv->invoice_number) }}'.includes(search.toLowerCase()) || 
+                                    '{{ strtolower($inv->customer->name ?? '') }}'.includes(search.toLowerCase()) || 
+                                    '{{ strtolower($inv->customer->tin_number ?? '') }}'.includes(search.toLowerCase())
+                                ) && (
+                                    statusFilter === 'all' || '{{ $inv->status }}' === statusFilter
+                                ) && (
+                                    modeFilter === 'all' || '{{ $inv->einvoice_mode }}' === modeFilter
+                                )">
                                 <td class="py-3 font-mono font-bold text-indigo-600 dark:text-indigo-400">
                                     {{ $inv->invoice_number }}
                                     @if ($inv->po_number)

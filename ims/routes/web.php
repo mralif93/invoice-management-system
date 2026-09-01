@@ -85,6 +85,65 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return view('admin.invoices.create', compact('customers'));
         })->name('invoices.create');
 
+        Route::post('/invoices', function (\Illuminate\Http\Request $request) {
+            $validated = $request->validate([
+                'customer_id' => 'required|exists:customers,id',
+                'invoice_number' => 'required|string|unique:invoices,invoice_number',
+                'issue_date' => 'required|date',
+                'due_date' => 'required|date|after_or_equal:issue_date',
+                'po_number' => 'nullable|string',
+                'einvoice_mode' => 'nullable|in:off,sandbox,production',
+                'items' => 'required|array|min:1',
+                'items.*.description' => 'required|string',
+                'items.*.qty' => 'required|numeric|min:1',
+                'items.*.unit_price' => 'required|numeric|min:0',
+                'items.*.sst_rate' => 'required|numeric|in:0,6,8',
+            ]);
+
+            $subtotal = 0;
+            $taxTotal = 0;
+
+            foreach ($validated['items'] as $item) {
+                $lineSubtotal = $item['qty'] * $item['unit_price'];
+                $lineTax = $lineSubtotal * ($item['sst_rate'] / 100);
+                $subtotal += $lineSubtotal;
+                $taxTotal += $lineTax;
+            }
+
+            $grandTotal = $subtotal + $taxTotal;
+
+            $invoice = Invoice::create([
+                'customer_id' => $validated['customer_id'],
+                'invoice_number' => $validated['invoice_number'],
+                'issue_date' => $validated['issue_date'],
+                'due_date' => $validated['due_date'],
+                'po_number' => $validated['po_number'] ?? null,
+                'subtotal' => $subtotal,
+                'tax_total' => $taxTotal,
+                'grand_total' => $grandTotal,
+                'status' => 'issued',
+                'einvoice_mode' => $validated['einvoice_mode'] ?? 'off',
+                'created_by' => auth()->id() ?? 1,
+            ]);
+
+            foreach ($validated['items'] as $item) {
+                $lineSubtotal = $item['qty'] * $item['unit_price'];
+                $lineTax = $lineSubtotal * ($item['sst_rate'] / 100);
+                
+                \App\Models\InvoiceItem::create([
+                    'invoice_id' => $invoice->id,
+                    'description' => $item['description'],
+                    'quantity' => $item['qty'],
+                    'unit_price' => $item['unit_price'],
+                    'tax_rate' => $item['sst_rate'],
+                    'tax_amount' => $lineTax,
+                    'total_amount' => $lineSubtotal + $lineTax,
+                ]);
+            }
+
+            return redirect()->route('admin.invoices.index')->with('success', "Invoice {$invoice->invoice_number} created successfully!");
+        })->name('invoices.store');
+
         Route::get('/customers', function () {
             $customers = Customer::withCount('invoices')->orderBy('name')->get();
             return view('admin.customers.index', compact('customers'));

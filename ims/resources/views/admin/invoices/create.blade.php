@@ -255,35 +255,51 @@
 
                 <!-- Actions Toolbar with Dedicated Preview PDF Button -->
                 <x-card title="Actions & Delivery">
-                    <div class="space-y-2.5">
-                        
+                    <form method="POST" action="{{ route('admin.invoices.store') }}" class="space-y-2.5">
+                        @csrf
+                        <input type="hidden" name="customer_id" :value="customerId">
+                        <input type="hidden" name="invoice_number" :value="invoiceNo">
+                        <input type="hidden" name="issue_date" :value="issueDate">
+                        <input type="hidden" name="due_date" :value="dueDate">
+                        <input type="hidden" name="po_number" :value="poNumber">
+                        <input type="hidden" name="einvoice_mode" :value="eInvoiceMode">
+
+                        <template x-for="(item, index) in items" :key="index">
+                            <div>
+                                <input type="hidden" :name="'items[' + index + '][description]'" :value="item.description">
+                                <input type="hidden" :name="'items[' + index + '][qty]'" :value="item.qty">
+                                <input type="hidden" :name="'items[' + index + '][unit_price]'" :value="item.price">
+                                <input type="hidden" :name="'items[' + index + '][sst_rate]'" :value="item.sstRate">
+                            </div>
+                        </template>
+
                         <!-- 1. Preview PDF Interactive Modal Button -->
-                        <x-button @click="showPdfModal = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" variant="outline" icon="eye" class="w-full py-2.5 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50">
+                        <x-button type="button" @click="showPdfModal = true; $nextTick(() => { if (window.initLucideIcons) window.initLucideIcons(); })" variant="outline" icon="eye" class="w-full py-2.5 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50">
                             Preview PDF Invoice
                         </x-button>
 
                         <!-- 2. Share via WhatsApp -->
-                        <x-button @click="openWhatsAppShare()" variant="success" icon="share-2" class="w-full py-2.5">
+                        <x-button type="button" @click="openWhatsAppShare()" variant="success" icon="share-2" class="w-full py-2.5">
                             Share via WhatsApp
                         </x-button>
 
                         <!-- 3. Direct Print / Export PDF -->
-                        <x-button variant="primary" icon="printer" class="w-full py-2.5" onclick="window.print()">
+                        <x-button type="button" variant="secondary" icon="printer" class="w-full py-2" onclick="window.print()">
                             Print / Export PDF
                         </x-button>
 
-                        <!-- 4. Save Draft -->
-                        <x-button variant="secondary" icon="save" class="w-full py-2">
-                            Save as Draft
+                        <!-- 4. Save Invoice (Persist to Database) -->
+                        <x-button type="submit" variant="primary" icon="save" class="w-full py-2.5 shadow-md">
+                            Save & Issue Invoice
                         </x-button>
 
                         <!-- 5. Transmit to LHDN (When in compliance mode) -->
                         <div x-show="eInvoiceMode !== 'off'" class="pt-1">
-                            <x-button variant="success" icon="shield-check" class="w-full py-2.5">
+                            <x-button type="submit" variant="success" icon="shield-check" class="w-full py-2.5">
                                 Transmit to LHDN MyInvois
                             </x-button>
                         </div>
-                    </div>
+                    </form>
                 </x-card>
             </div>
         </div>
